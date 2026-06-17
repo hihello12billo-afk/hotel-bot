@@ -30,7 +30,10 @@ export async function POST(request: Request) {
 
       if (message?.type === "text") {
         const incomingText = message.text.body;
-        const senderPhone = message.from; 
+        const senderPhone = message.from;
+
+        // ✅ DEBUG LOG (added)
+        console.log("👉 INCOMING MESSAGE TEXT:", incomingText);
 
         // Check if the message matches the QR Code exact text
         if (incomingText.includes("Hello, I am at the hotel and would like to see the Tours PDF!")) {
@@ -38,7 +41,7 @@ export async function POST(request: Request) {
         }
       }
     }
-    
+
     return new NextResponse("OK", { status: 200 });
   } catch (error) {
     console.error("Webhook error:", error);
@@ -57,7 +60,7 @@ async function sendPdfDocument(recipientPhone: string) {
     type: "document",
     document: {
       // REPLACE THIS URL with your live Vercel domain later!
-      link: "https://YOUR-APP.vercel.app/tours.pdf", 
+      link: "https://YOUR-APP.vercel.app/tours.pdf",
       caption: "Welcome to our Hotel! 🏨 Here is your Tours & Cruises guide. Let me know what you want to book!",
       filename: "Hotel_Tours_Cruises.pdf"
     }
