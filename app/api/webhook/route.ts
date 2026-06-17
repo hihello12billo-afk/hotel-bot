@@ -4,7 +4,7 @@ const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 
-// 1. GET Request: Meta uses this ONCE to verify your URL is real
+// 1. GET Request: Meta verification
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const mode = searchParams.get("hub.mode");
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   return new NextResponse("Forbidden", { status: 403 });
 }
 
-// 2. POST Request: This runs every time a guest sends a message
+// 2. POST Request: WhatsApp webhook
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -32,11 +32,14 @@ export async function POST(request: Request) {
         const incomingText = message.text.body;
         const senderPhone = message.from;
 
-        // ✅ DEBUG LOG (added)
+        // DEBUG LOG
         console.log("👉 INCOMING MESSAGE TEXT:", incomingText);
 
-        // Check if the message matches the QR Code exact text
-        if (incomingText.includes("Hello, I am at the hotel and would like to see the Tours PDF!")) {
+        if (
+          incomingText.includes(
+            "Hello, I am at the hotel and would like to see the Tours PDF!"
+          )
+        ) {
           await sendPdfDocument(senderPhone);
         }
       }
@@ -49,7 +52,7 @@ export async function POST(request: Request) {
   }
 }
 
-// 3. Helper Function: Triggers the Meta API to send the PDF file
+// 3. Send PDF via Meta API
 async function sendPdfDocument(recipientPhone: string) {
   const url = `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`;
 
@@ -59,19 +62,25 @@ async function sendPdfDocument(recipientPhone: string) {
     to: recipientPhone,
     type: "document",
     document: {
-      // REPLACE THIS URL with your live Vercel domain later!
-      link: "https://YOUR-APP.vercel.app/tours.pdf",
-      caption: "Welcome to our Hotel! 🏨 Here is your Tours & Cruises guide. Let me know what you want to book!",
-      filename: "Hotel_Tours_Cruises.pdf"
-    }
+      link: "https://hotel-bot-chi.vercel.app/tours.pdf",
+      caption:
+        "Welcome to our Hotel! 🏨 Here is your Tours & Cruises guide. Let me know what you want to book!",
+      filename: "Hotel_Tours_Cruises.pdf",
+    },
   };
 
-  await fetch(url, {
+  const response = await fetch(url, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${WHATSAPP_TOKEN}`,
-      "Content-Type": "application/json"
+      Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
   });
+
+  // DEBUG LOGS (Meta response)
+  const responseData = await response.json();
+
+  console.log("👉 META API STATUS:", response.status);
+  console.log("👉 META API RESPONSE:", JSON.stringify(responseData, null, 2));
 }
